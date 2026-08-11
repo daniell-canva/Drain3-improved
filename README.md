@@ -133,7 +133,7 @@ Primary configuration parameters:
 - `[MASKING]/masking` - parameters masking - in json format (default "")
 - `[MASKING]/mask_prefix` & `[MASKING]/mask_suffix` - the wrapping of identified parameters in templates. By default, it
   is `<` and `>` respectively.
-- `[SNAPSHOT]/snapshot_interval_minutes` - time interval for new snapshots (default 1)
+- `[SNAPSHOT]/snapshot_interval_minutes` - time interval for new snapshots (default 5)
 - `[SNAPSHOT]/compress_state` - whether to compress the state before saving it. This can be useful when using Kafka
   persistence.
 
