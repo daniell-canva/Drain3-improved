@@ -159,6 +159,9 @@ masking = [
     ]
 ```
 
+**Warning:** Masking using improperly formed regular expressions can stop the template miner by overtaxing your CPU.
+Examine all masking patterns before use, and verify their behavior against adversarial inputs.
+
 ## Persistence
 
 The persistence feature saves and loads a snapshot of Drain3 state in a (compressed) json format. This feature adds
