@@ -93,8 +93,8 @@ post: [Use open source Drain3 log-template mining project to monitor for network
 - [**Memory efficiency**](#memory-efficiency). Decrease the memory footprint of internal data structures and introduce
   cache to control max memory consumed (thanks to @StanislawSwierc)
 - [**Inference mode**](#training-vs-inference-modes). In case you want to separate training and inference phase, Drain3
-  provides a function for *fast* matching against already-learned clusters (templates) only, without the usage of
-  regular expressions.
+  provides a function for matching against already-learned clusters (templates) only, without creating or modifying
+  clusters. Configured masking regular expressions are applied before matching.
 - [**Parameter extraction**](#parameter-extraction). Accurate extraction of the variable parts from a log message as an
   ordered list, based on its mined template and the defined masking instructions (thanks to @Impelon).
 
@@ -126,6 +126,8 @@ Primary configuration parameters:
   log cluster will be created (default 0.4)
 - `[DRAIN]/depth` - max depth levels of log clusters. Minimum is 3. (default 4)
 - `[DRAIN]/max_children` - max number of children of an internal node (default 100)
+- `[DRAIN]/parametrize_numeric_tokens` - route tokens containing digits through the wildcard branch of the search tree
+  (default true)
 - `[DRAIN]/max_clusters` - max number of tracked clusters (unlimited by default). When this number is reached, model
   starts replacing old clusters with a new ones according to the LRU cache eviction policy.
 - `[DRAIN]/extra_delimiters` - delimiters to apply when splitting log message into words (in addition to whitespace) (
@@ -154,9 +156,8 @@ For example, following masking instructions in `drain3.ini` will mask IP address
 [MASKING]
 masking = [
           {"regex_pattern":"((?<=[^A-Za-z0-9])|^)(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})((?=[^A-Za-z0-9])|$)", "mask_with": "IP"},
-          {"regex_pattern":"((?<=[^A-Za-z0-9])|^)([\\-\\+]?\\d+)((?=[^A-Za-z0-9])|$)", "mask_with": "NUM"},
+          {"regex_pattern":"((?<=[^A-Za-z0-9])|^)([\\-\\+]?\\d+)((?=[^A-Za-z0-9])|$)", "mask_with": "NUM"}
           ]
-    ]
 ```
 
 **Warning:** Masking using improperly formed regular expressions can stop the template miner by overtaxing your CPU.
@@ -243,9 +244,12 @@ existing cluster (if similarity is above threshold) or create a new cluster. It 
 existing cluster.
 
 In inference mode you should call `template_miner.match(log_line)`. This will match log line against previously learned
-clusters only. No new clusters are created and templates of existing clusters are not changed. Match to existing cluster
-has to be perfect, otherwise `None` is returned. You can use persistence option to load previously trained clusters
-before inference.
+clusters only. Configured masking regular expressions are applied to the message before matching. No new clusters are
+created and templates of existing clusters are not changed. A match must fit the learned template, including its
+wildcards, otherwise `None` is returned. The default `full_search_strategy="never"` searches only the tree-selected
+leaf and can miss a matching wildcard template in another leaf. Use `"fallback"` to search all clusters with the same
+token count when the tree search fails, or `"always"` to always perform that full search. You can use persistence to
+load previously trained clusters before inference.
 
 ## Memory efficiency
 
@@ -314,19 +318,18 @@ pip3 install redis
 
 ## Examples
 
-In order to run the examples directly from the repository, you need to install dependencies. You can do that using *
-pipenv* by executing the following command (assuming pipenv already installed):
+To run the examples directly from the repository, install the project and its development dependencies with Poetry:
 
 ```shell
-python3 -m pipenv sync
+poetry install
 ```
 
 #### Example 1 - `drain_stdin_demo`
 
-Run [examples/drain_stdin_demo.py](examples/drain_stdin_demo.py) from the root folder of the repository by:
+Run [examples/drain_stdin_demo.py](examples/drain_stdin_demo.py) from the root folder of the repository with:
 
 ```
-python3 -m pipenv run python -m examples.drain_stdin_demo
+poetry run python -m examples.drain_stdin_demo
 ```
 
 This example uses Drain3 on input from stdin and persist to either Kafka / file / no persistence.
@@ -340,10 +343,10 @@ previously trained clusters only. Press `q` again to finish execution.
 
 #### Example 2 - `drain_bigfile_demo`
 
-Run [examples/drain_bigfile_demo](examples/drain_bigfile_demo.py) from the root folder of the repository by:
+Run [examples/drain_bigfile_demo](examples/drain_bigfile_demo.py) from the root folder of the repository with:
 
 ```
-python3 -m pipenv run python -m examples.drain_bigfile_demo
+poetry run python -m examples.drain_bigfile_demo
 ```
 
 This example downloads a real-world log file (of an SSH server) and process all lines, then prints result clusters,
@@ -407,7 +410,7 @@ Our project welcomes external contributions. Please refer to [CONTRIBUTING.md](C
 * Added: `TemplateMiner.get_parameter_list()` function to extract template parameters for raw log message (thanks to *
   @cwyalpha*)
 * Added option to customize mask wrapper - Instead of the default `<*>`, `<NUM>` etc, you can select any wrapper prefix
-  or suffix by overriding `TemplateMinerConfig.mask_prefix` and `TemplateMinerConfig.mask_prefix`
+  or suffix by overriding `TemplateMinerConfig.mask_prefix` and `TemplateMinerConfig.mask_suffix`
 * Fixed: config `.ini` file is always read from same folder as source file in demos in tests (thanks *@RobinMaas95*)
 
 ##### v0.9.3
