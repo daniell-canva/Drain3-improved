@@ -484,15 +484,13 @@ class Drain(DrainBase):
 
         :param content: log message to match
         :param full_search_strategy: when to perform full cluster search.
-            (1) "never" is the fastest, will always perform a tree search [O(log(n)] but might produce
-            false negatives (wrong mismatches) on some edge cases;
-            (2) "fallback" will perform a linear search [O(n)] among all clusters with the same token count, but only in
-            case tree search found no match.
-            It should not have false negatives, however tree-search may find a non-optimal match with
-            more wildcard parameters than necessary;
-            (3) "always" is the slowest. It will select the best match among all known clusters, by always evaluating
-            all clusters with the same token count, and selecting the cluster with perfect all token match and least
-            count of wildcard matches.
+            (1) "never" searches the tree-selected leaf, whose candidates are checked linearly. It can miss a matching
+            cluster routed to a different leaf;
+            (2) "fallback" searches all clusters with the same token count if tree search finds no match. This avoids
+            false negatives, but a tree match may be returned without checking whether another matching cluster has
+            fewer wildcard parameters;
+            (3) "always" searches all clusters with the same token count and chooses a perfect match with the fewest
+            wildcard parameters.
         :return: Matched cluster or None if no match found.
         """
 
