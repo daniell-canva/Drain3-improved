@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 
 import unittest
+from unittest.mock import patch
 
 from drain3.simple_profiler import NullProfiler, SimpleProfiler, ProfiledSectionStats
 
@@ -17,11 +18,12 @@ class NullProfilerTest(unittest.TestCase):
 class SimpleProfilerTest(unittest.TestCase):
     def test_start_and_end_section(self):
         profiler = SimpleProfiler()
-        profiler.start_section("a")
-        profiler.end_section()
+        with patch("drain3.simple_profiler.time.time", side_effect=[10.0, 12.5]):
+            profiler.start_section("a")
+            profiler.end_section()
         stats = profiler.section_to_stats["a"]
         self.assertEqual(1, stats.sample_count)
-        self.assertGreater(stats.total_time_sec, 0)
+        self.assertAlmostEqual(2.5, stats.total_time_sec)
 
     def test_end_section_by_name(self):
         profiler = SimpleProfiler()
