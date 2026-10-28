@@ -5,7 +5,15 @@ import logging
 import re
 import time
 import zlib
-from typing import Optional, Mapping, MutableMapping, NamedTuple, Sequence, Tuple, Union
+from typing import (
+    Optional,
+    Mapping,
+    MutableMapping,
+    NamedTuple,
+    Sequence,
+    Tuple,
+    TypedDict,
+)
 
 import jsonpickle  # type: ignore[import]
 from cachetools import LRUCache, cachedmethod
@@ -25,6 +33,14 @@ config_filename = "drain3.ini"
 ExtractedParameter = NamedTuple(
     "ExtractedParameter", [("value", str), ("mask_name", str)]
 )
+
+
+class AddLogMessageResult(TypedDict):
+    change_type: str
+    cluster_id: int
+    cluster_size: int
+    template_mined: str
+    cluster_count: int
 
 
 class TemplateMiner:
@@ -166,7 +182,7 @@ class TemplateMiner:
 
         return None
 
-    def add_log_message(self, log_message: str) -> Mapping[str, Union[str, int]]:
+    def add_log_message(self, log_message: str) -> AddLogMessageResult:
         self.profiler.start_section("total")
 
         self.profiler.start_section("mask")
@@ -176,7 +192,7 @@ class TemplateMiner:
         self.profiler.start_section("drain")
         cluster, change_type = self.drain.add_log_message(masked_content)
         self.profiler.end_section("drain")
-        result: Mapping[str, Union[str, int]] = {
+        result: AddLogMessageResult = {
             "change_type": change_type,
             "cluster_id": cluster.cluster_id,
             "cluster_size": cluster.size,

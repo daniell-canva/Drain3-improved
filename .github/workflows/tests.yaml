@@ -40,3 +40,6 @@ jobs:
 
     - name: Test with unittest
       run: poetry run python -m unittest discover --verbose --start-directory tests
+
+    - name: Check result types
+      run: poetry run mypy --follow-imports=silent --disallow-any-expr tests/typing
